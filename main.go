@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"restapi/book"
 	"restapi/database"
 
 	"github.com/gofiber/fiber/v2"
@@ -20,6 +21,9 @@ func initDatabase(){
 	}
 
 	fmt.Println("DB connection Successfull")
+
+	database.DBConn.AutoMigrate(&book.Book{})
+	fmt.Println("database migrated")
 }
 
 func main(){
