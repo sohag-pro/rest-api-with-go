@@ -26,11 +26,16 @@ service with separated routing, handlers, and database packages.
 ```
 .
 ├── main.go             # entry point: Fiber app, DB init/migrate, server start
-├── route.go            # route → handler wiring
+├── route.go            # route → handler wiring (groups + auth)
+├── config.go           # env-var configuration loader
+├── middleware.go       # API-key auth middleware
+├── main_test.go        # config + auth middleware tests
 ├── database/
 │   └── database.go     # shared *gorm.DB connection
 ├── book/
-│   └── book.go         # Book model + CRUD handlers
+│   ├── book.go         # Book model + CRUD handlers
+│   └── book_test.go    # handler/validation/pagination tests
+├── .env.example        # environment variable template
 ├── go.mod / go.sum     # module + dependencies
 └── books.db            # SQLite file (auto-created, gitignored)
 ```
