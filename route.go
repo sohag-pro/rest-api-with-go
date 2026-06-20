@@ -6,10 +6,16 @@ import (
 	"github.com/gofiber/fiber/v2"
 )
 
-func handleRoute(app *fiber.App) {
-	app.Get("/api/v1/book", book.GetBooks)
-	app.Get("/api/v1/book/:id", book.GetBook)
-	app.Post("/api/v1/book", book.NewBook)
-	app.Patch("/api/v1/book/:id", book.UpdateBook)
-	app.Delete("/api/v1/book/:id", book.DeleteBooks)
+func handleRoute(app *fiber.App, cfg Config) {
+	api := app.Group("/api/v1")
+
+	// Public read endpoints
+	api.Get("/book", book.GetBooks)
+	api.Get("/book/:id", book.GetBook)
+
+	// Mutating endpoints, guarded by API key when configured
+	write := api.Group("", apiKeyAuth(cfg.APIKey))
+	write.Post("/book", book.NewBook)
+	write.Patch("/book/:id", book.UpdateBook)
+	write.Delete("/book/:id", book.DeleteBooks)
 }

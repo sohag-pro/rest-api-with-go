@@ -66,24 +66,57 @@ go build -o books-api .
 
 ## Configuration
 
-Currently fixed values (edit source to change):
+Configured via environment variables (all optional):
 
-| Setting | Value | Location |
-|---------|-------|----------|
-| Listen port | `:3000` | `main.go` |
-| SQLite file | `books.db` | `main.go` |
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `PORT`     | `3000`     | Server listen port |
+| `DB_PATH`  | `books.db` | SQLite file path |
+| `API_KEY`  | *(empty)*  | If set, write endpoints require this key. Empty disables auth. |
+
+```bash
+PORT=8080 DB_PATH=/data/books.db API_KEY=s3cret go run .
+```
+
+## Authentication
+
+Read endpoints (`GET`) are always public. Write endpoints (`POST`, `PATCH`,
+`DELETE`) are guarded only when `API_KEY` is set. Authenticated requests must send
+the key in the `X-API-Key` header:
+
+```bash
+curl -X POST localhost:3000/api/v1/book \
+  -H 'X-API-Key: s3cret' \
+  -H 'Content-Type: application/json' \
+  -d '{"title":"Go","rating":5}'
+```
+
+Without `API_KEY` set, auth is disabled and all endpoints are open.
 
 ## API Reference
 
 Base path: `http://localhost:3000/api/v1`
 
-| Method | Endpoint     | Description        | Body            |
-|--------|--------------|--------------------|-----------------|
-| GET    | `/book`      | List all books     | —               |
-| GET    | `/book/:id`  | Get one book by ID | —               |
-| POST   | `/book`      | Create a book      | Book JSON       |
-| PATCH  | `/book/:id`  | Update a book      | Book JSON       |
-| DELETE | `/book/:id`  | Delete a book      | —               |
+| Method | Endpoint     | Description        | Auth | Body            |
+|--------|--------------|--------------------|------|-----------------|
+| GET    | `/book`      | List books (paginated) | — | —           |
+| GET    | `/book/:id`  | Get one book by ID | —    | —               |
+| POST   | `/book`      | Create a book      | key  | Book JSON       |
+| PATCH  | `/book/:id`  | Update a book      | key  | Book JSON       |
+| DELETE | `/book/:id`  | Delete a book      | key  | —               |
+
+### Pagination
+
+`GET /book` accepts query parameters:
+
+| Param    | Default | Notes |
+|----------|---------|-------|
+| `limit`  | `10`    | Max `100`; out-of-range values fall back to `10` |
+| `offset` | `0`     | Negative values clamp to `0` |
+
+```bash
+curl 'localhost:3000/api/v1/book?limit=20&offset=40'
+```
 
 ### Book object
 
@@ -96,14 +129,19 @@ Base path: `http://localhost:3000/api/v1`
 ```
 
 Responses also include GORM metadata: `ID`, `CreatedAt`, `UpdatedAt`, `DeletedAt`.
-`title` is required on create (returns `400` if missing).
+
+### Validation
+
+- `title` — required, whitespace-trimmed, must be non-empty
+- `rating` — must be between `0` and `5`
 
 ### Status codes
 
 | Code | Meaning |
 |------|---------|
 | 200  | Success |
-| 400  | Missing required field (`title`) |
+| 400  | Validation failed (missing `title` or `rating` out of range) |
+| 401  | Missing/invalid `X-API-Key` (when auth enabled) |
 | 404  | Book not found |
 | 406  | Request body could not be parsed |
 
@@ -135,14 +173,19 @@ curl -X DELETE localhost:3000/api/v1/book/1
 ```bash
 go build ./...   # compile
 go vet ./...     # static checks
+go test ./...    # run tests
 gofmt -l .       # list unformatted files (empty = clean)
 ```
 
-## Known Limitations
+## Testing
 
-- No tests yet
-- Config is hardcoded (port, DB path) — no env/flag support
-- No pagination, auth, or input validation beyond `title`
+Tests cover handler CRUD, validation, pagination, not-found paths, and the
+API-key middleware. Each test uses an isolated temporary SQLite file, so no
+running server or shared state is required.
+
+```bash
+go test ./... -v
+```
 
 ## License
 

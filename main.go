@@ -11,9 +11,9 @@ import (
 	"gorm.io/gorm"
 )
 
-func initDatabase() {
+func initDatabase(dbPath string) {
 	var err error
-	database.DBConn, err = gorm.Open(sqlite.Open("books.db"), &gorm.Config{})
+	database.DBConn, err = gorm.Open(sqlite.Open(dbPath), &gorm.Config{})
 	if err != nil {
 		log.Fatal("Failed to connect to DB:", err)
 	}
@@ -26,11 +26,13 @@ func initDatabase() {
 }
 
 func main() {
+	cfg := loadConfig()
+
 	// Fiber instance
 	app := fiber.New()
 
 	// Init DB
-	initDatabase()
+	initDatabase(cfg.DBPath)
 	defer func() {
 		sqlDB, err := database.DBConn.DB()
 		if err == nil {
@@ -39,8 +41,8 @@ func main() {
 	}()
 
 	// Routes
-	handleRoute(app)
+	handleRoute(app, cfg)
 
 	// Start server
-	log.Fatal(app.Listen(":3000"))
+	log.Fatal(app.Listen(":" + cfg.Port))
 }
