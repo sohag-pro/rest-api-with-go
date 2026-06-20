@@ -1,0 +1,21 @@
+services:
+  api:
+    build: .
+    ports:
+      - "3000:3000"
+    environment:
+      PORT: "3000"
+      DB_PATH: "/data/books.db"
+      LOG_LEVEL: "info"
+      # API_KEY: "change-me"   # uncomment to require auth on writes
+    volumes:
+      - books-data:/data
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:3000/healthz"]
+      interval: 30s
+      timeout: 3s
+      retries: 3
+
+volumes:
+  books-data:

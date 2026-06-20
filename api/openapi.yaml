@@ -1,0 +1,161 @@
+openapi: 3.0.3
+info:
+  title: Books REST API
+  description: A small, production-grade REST API for managing books.
+  version: 1.0.0
+  license:
+    name: MIT
+servers:
+  - url: http://localhost:3000
+    description: Local development
+paths:
+  /healthz:
+    get:
+      summary: Liveness/readiness probe
+      tags: [system]
+      responses:
+        "200":
+          description: Service healthy
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status: { type: string, example: ok }
+        "503":
+          description: Database unavailable
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Error" }
+  /api/v1/book:
+    get:
+      summary: List books
+      tags: [books]
+      parameters:
+        - name: limit
+          in: query
+          schema: { type: integer, default: 10, minimum: 1, maximum: 100 }
+        - name: offset
+          in: query
+          schema: { type: integer, default: 0, minimum: 0 }
+      responses:
+        "200":
+          description: List of books
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: "#/components/schemas/Book" }
+    post:
+      summary: Create a book
+      tags: [books]
+      security:
+        - apiKey: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/BookInput" }
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Book" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+  /api/v1/book/{id}:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema: { type: integer }
+    get:
+      summary: Get a book by ID
+      tags: [books]
+      responses:
+        "200":
+          description: Book found
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Book" }
+        "404": { $ref: "#/components/responses/NotFound" }
+    patch:
+      summary: Update a book
+      tags: [books]
+      security:
+        - apiKey: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/BookInput" }
+      responses:
+        "200":
+          description: Updated
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Book" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "404": { $ref: "#/components/responses/NotFound" }
+    delete:
+      summary: Delete a book
+      tags: [books]
+      security:
+        - apiKey: []
+      responses:
+        "200":
+          description: Deleted
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message: { type: string, example: book deleted }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "404": { $ref: "#/components/responses/NotFound" }
+components:
+  securitySchemes:
+    apiKey:
+      type: apiKey
+      in: header
+      name: X-API-Key
+  responses:
+    BadRequest:
+      description: Validation failed
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/Error" }
+    Unauthorized:
+      description: Missing or invalid API key
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/Error" }
+    NotFound:
+      description: Book not found
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/Error" }
+  schemas:
+    BookInput:
+      type: object
+      required: [title]
+      properties:
+        title: { type: string, example: Clean Code }
+        author: { type: string, example: Robert C. Martin }
+        rating: { type: integer, minimum: 0, maximum: 5, example: 5 }
+    Book:
+      allOf:
+        - $ref: "#/components/schemas/BookInput"
+        - type: object
+          properties:
+            ID: { type: integer, example: 1 }
+            CreatedAt: { type: string, format: date-time }
+            UpdatedAt: { type: string, format: date-time }
+            DeletedAt: { type: string, format: date-time, nullable: true }
+    Error:
+      type: object
+      properties:
+        error: { type: string, example: book not found }
+        code: { type: integer, example: 404 }

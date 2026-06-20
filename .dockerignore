@@ -1,0 +1,10 @@
+.git
+.github
+.vscode
+*.db
+.env
+README.MD
+LICENSE
+Makefile
+docker-compose.yml
+.golangci.yml
