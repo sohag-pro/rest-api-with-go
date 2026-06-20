@@ -3,7 +3,7 @@
 .vscode
 *.db
 .env
-README.MD
+README.md
 LICENSE
 Makefile
 docker-compose.yml
