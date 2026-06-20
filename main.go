@@ -2,44 +2,45 @@ package main
 
 import (
 	"fmt"
+	"log"
 	"restapi/book"
 	"restapi/database"
 
 	"github.com/gofiber/fiber/v2"
-	"github.com/jinzhu/gorm"
-	_ "github.com/jinzhu/gorm/dialects/sqlite"
+	"gorm.io/driver/sqlite"
+	"gorm.io/gorm"
 )
 
-
-
-func initDatabase(){
+func initDatabase() {
 	var err error
-	database.DBConn, err = gorm.Open("sqlite3", "books.db")
-
+	database.DBConn, err = gorm.Open(sqlite.Open("books.db"), &gorm.Config{})
 	if err != nil {
-		panic("Failed to connect to DB")
+		log.Fatal("Failed to connect to DB:", err)
 	}
+	fmt.Println("DB connection successful")
 
-	fmt.Println("DB connection Successfull")
-
-	database.DBConn.AutoMigrate(&book.Book{})
-	fmt.Println("database migrated")
+	if err := database.DBConn.AutoMigrate(&book.Book{}); err != nil {
+		log.Fatal("Failed to migrate DB:", err)
+	}
+	fmt.Println("Database migrated")
 }
 
-func main(){
-	// Fiber Instance
+func main() {
+	// Fiber instance
 	app := fiber.New()
 
 	// Init DB
 	initDatabase()
-	defer database.DBConn.Close()
+	defer func() {
+		sqlDB, err := database.DBConn.DB()
+		if err == nil {
+			sqlDB.Close()
+		}
+	}()
 
-	// Route
+	// Routes
 	handleRoute(app)
 
-
-	// Start Server
-	app.Listen(":3000")
+	// Start server
+	log.Fatal(app.Listen(":3000"))
 }
-
-
