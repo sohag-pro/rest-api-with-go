@@ -56,6 +56,10 @@ cd rest-api-with-go
 # download dependencies
 go mod download
 
+# set up environment (optional — defaults work without it)
+cp .env.example .env
+export $(grep -v '^#' .env | xargs)
+
 # run (server listens on :3000)
 go run .
 ```
