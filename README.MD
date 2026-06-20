@@ -78,6 +78,14 @@ Configured via environment variables (all optional):
 PORT=8080 DB_PATH=/data/books.db API_KEY=s3cret go run .
 ```
 
+See [`.env.example`](.env.example) for a template. The app reads real environment
+variables (it does not auto-load `.env`), so export them first:
+
+```bash
+cp .env.example .env
+export $(grep -v '^#' .env | xargs) && go run .
+```
+
 ## Authentication
 
 Read endpoints (`GET`) are always public. Write endpoints (`POST`, `PATCH`,
